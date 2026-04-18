@@ -1,0 +1,41 @@
+:root {
+  --ocean: #0ea5e9;
+  --sand:  #fef3c7;
+  --palm:  #059669;
+  --coral: #fb7185;
+}
+
+body {
+  font-family: "Inter", system-ui, sans-serif;
+  background: linear-gradient(180deg, var(--sand) 0%, #fff 40%);
+  min-height: 100vh;
+}
+
+h1, h2, h3 { font-family: "Playfair Display", serif; }
+
+.hero {
+  background: linear-gradient(180deg, var(--ocean) 0%, var(--sand) 100%);
+  position: relative;
+  overflow: hidden;
+}
+.hero::after {
+  content: "";
+  position: absolute; bottom: -1px; left: 0; right: 0; height: 60px;
+  background-image: url("../assets/svg/wave.svg");
+  background-repeat: repeat-x;
+  background-size: auto 60px;
+}
+.palm-bg {
+  background-image: url("../assets/svg/palm.svg");
+  background-repeat: no-repeat;
+  background-position: bottom -20px left -20px;
+  background-size: 180px;
+}
+
+table.itinerary th, table.itinerary td { padding: .5rem .75rem; }
+table.itinerary tbody tr:nth-child(odd) { background: #f8fafc; }
+
+.badge-overlap {
+  background: #fef08a; color: #713f12;
+  font-size: .75rem; padding: 2px 6px; border-radius: 6px;
+}
