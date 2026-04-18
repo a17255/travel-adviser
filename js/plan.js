@@ -1,6 +1,7 @@
-import { loadCurrentTrip, saveCurrentTrip, saveTrip } from "./store.js";
-import { qs, qsa, el } from "./ui.js";
+import { loadCurrentTrip, saveCurrentTrip, saveTrip, getProfile } from "./store.js";
+import { qs, qsa, el, formatVND, uuid } from "./ui.js";
 import { loadSuppliers } from "./templates.js";
+import { shareOf, netPerParticipant, suggestSettlement } from "./fees.js";
 
 const trip = loadCurrentTrip();
 if (!trip) { location.href = "index.html"; throw new Error("no trip"); }
@@ -35,6 +36,8 @@ qsa(".tab-btn").forEach(btn => {
     const name = btn.dataset.tab;
     qs("#tab-plan").classList.toggle("hidden", name !== "plan");
     qs("#tab-fees").classList.toggle("hidden", name !== "fees");
+    if (btn.dataset.tab === "fees") renderFees();
+    if (btn.dataset.tab === "plan") redraw();
   });
 });
 
@@ -172,6 +175,155 @@ async function redraw() {
   await renderItinerary();
 }
 
+function renderFees() {
+  const host = document.querySelector("#tab-fees");
+  host.innerHTML = "";
+
+  // Participant manager
+  const pcard = el("div", { class: "bg-white rounded-2xl shadow p-5 mb-4" }, [
+    el("h2", { class: "text-xl font-bold mb-3" }, "Participants")
+  ]);
+  const plist = el("div", { class: "flex flex-wrap gap-2 mb-3" });
+  trip.participants.forEach(p => {
+    plist.appendChild(el("span", {
+      class: "px-3 py-1 rounded-full text-white",
+      style: `background:${p.color}`
+    }, [ p.name, el("button", {
+      class: "ml-2",
+      onclick: () => {
+        trip.participants = trip.participants.filter(x => x.name !== p.name);
+        renderFees();
+      }
+    }, "✕") ]));
+  });
+  pcard.appendChild(plist);
+  const pinput = el("input", { placeholder: "name", class: "border rounded-lg p-2 mr-2" });
+  const paddbtn = el("button", {
+    class: "px-3 py-1 bg-sky-500 text-white rounded-lg",
+    onclick: () => {
+      if (!pinput.value) return;
+      const colors = ["#0ea5e9","#f59e0b","#10b981","#f43f5e","#8b5cf6","#14b8a6"];
+      const color = colors[trip.participants.length % colors.length];
+      trip.participants.push({ name: pinput.value, color });
+      renderFees();
+    }
+  }, "Add");
+  pcard.appendChild(pinput);
+  pcard.appendChild(paddbtn);
+  host.appendChild(pcard);
+
+  // Fee entry form
+  const fcard = el("div", { class: "bg-white rounded-2xl shadow p-5 mb-4" }, [
+    el("h2", { class: "text-xl font-bold mb-3" }, "Add fee")
+  ]);
+  const fform = el("div", { class: "grid grid-cols-2 gap-3" });
+  const inputs = {
+    date:   el("input", { type: "date", class: "border rounded-lg p-2" }),
+    label:  el("input", { placeholder: "label", class: "border rounded-lg p-2" }),
+    amount: el("input", { type: "number", placeholder: "amount", class: "border rounded-lg p-2" }),
+    paidBy: el("select", { class: "border rounded-lg p-2" }),
+    splitMode: el("select", { class: "border rounded-lg p-2" },
+      ["all","exclude","include","manual"].map(m =>
+        el("option", { value: m }, m)))
+  };
+  trip.participants.forEach(p =>
+    inputs.paidBy.appendChild(el("option", { value: p.name }, p.name)));
+  Object.entries(inputs).forEach(([k, v]) =>
+    fform.appendChild(el("label", { class: "text-sm" },
+      [ el("span", { class: "font-semibold" }, k), v ])));
+  const addBtn = el("button", {
+    class: "col-span-2 bg-emerald-600 text-white rounded-lg py-2",
+    onclick: () => {
+      const profile = getProfile();
+      const fee = {
+        id: uuid(),
+        date:   inputs.date.value,
+        label:  inputs.label.value,
+        amount: Number(inputs.amount.value),
+        currency: "VND",
+        paidBy: inputs.paidBy.value,
+        splitMode: inputs.splitMode.value,
+        participants: [],
+        manualShares: null,
+        voided: false,
+        log: [{ at: new Date().toISOString(),
+                who: profile.name || "anon",
+                action: "add", snapshot: null }]
+      };
+      if (fee.splitMode === "include" || fee.splitMode === "exclude") {
+        const csv = prompt(`Names (comma-separated) to ${fee.splitMode}:`);
+        fee.participants = (csv || "").split(",").map(s => s.trim()).filter(Boolean);
+      }
+      if (fee.splitMode === "manual") {
+        fee.manualShares = {};
+        trip.participants.forEach(p => {
+          fee.manualShares[p.name] = Number(prompt(`Share for ${p.name}?`) || 0);
+        });
+      }
+      trip.fees.push(fee);
+      renderFees();
+    }
+  }, "Add fee");
+  fform.appendChild(addBtn);
+  fcard.appendChild(fform);
+  host.appendChild(fcard);
+
+  // Fee list
+  const lcard = el("div", { class: "bg-white rounded-2xl shadow p-5 mb-4" }, [
+    el("h2", { class: "text-xl font-bold mb-3" }, "Fees")
+  ]);
+  if (trip.fees.length === 0) {
+    lcard.appendChild(el("p", { class: "text-gray-500" }, "No fees yet."));
+  } else {
+    const tbl = el("table", { class: "w-full text-left" });
+    tbl.appendChild(el("thead", {}, el("tr", {},
+      ["Date","Label","Amount","Paid by","Split",""].map(h => el("th", {}, h)))));
+    const tb = el("tbody");
+    trip.fees.forEach(f => {
+      tb.appendChild(el("tr", { style: f.voided ? "opacity:.4" : "" }, [
+        el("td", {}, f.date), el("td", {}, f.label),
+        el("td", {}, formatVND(f.amount)), el("td", {}, f.paidBy),
+        el("td", {}, f.splitMode),
+        el("td", {}, el("button", {
+          class: "text-rose-500",
+          onclick: () => {
+            f.voided = !f.voided;
+            f.log.push({ at: new Date().toISOString(),
+              who: getProfile().name || "anon",
+              action: "void", snapshot: null });
+            renderFees();
+          }
+        }, f.voided ? "unvoid" : "void"))
+      ]));
+    });
+    tbl.appendChild(tb);
+    lcard.appendChild(tbl);
+  }
+  host.appendChild(lcard);
+
+  // Summary + settlement
+  const net = netPerParticipant(trip.fees, trip.participants);
+  const scard = el("div", { class: "bg-white rounded-2xl shadow p-5" }, [
+    el("h2", { class: "text-xl font-bold mb-3" }, "Balance")
+  ]);
+  const ul = el("ul", { class: "space-y-1" });
+  Object.entries(net).forEach(([name, v]) =>
+    ul.appendChild(el("li", {},
+      `${name}: ${v >= 0 ? "+" : ""}${formatVND(v)}`)));
+  scard.appendChild(ul);
+  const settlements = suggestSettlement(net);
+  if (settlements.length) {
+    scard.appendChild(el("h3", { class: "font-bold mt-4" }, "Suggested settlement"));
+    const sl = el("ul", { class: "space-y-1" });
+    settlements.forEach(s =>
+      sl.appendChild(el("li", {},
+        `${s.from} pays ${s.to}: ${formatVND(s.amount)}`)));
+    scard.appendChild(sl);
+  }
+  host.appendChild(scard);
+}
+
 redraw();
+renderFees();
 
 export { trip, renderOverview };
