@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Travel Adviser</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap">
+  <link rel="stylesheet" href="css/custom.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <header class="hero text-white py-16 palm-bg">
+    <div class="max-w-3xl mx-auto px-6">
+      <h1 class="text-5xl font-bold mb-2">Travel Adviser</h1>
+      <p class="text-lg opacity-90">Plan, track, and split your next trip.</p>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-6 -mt-10 relative z-10">
+    <form id="trip-form" class="bg-white rounded-2xl shadow-lg p-8 space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <label class="col-span-2">
+          <span class="text-sm font-semibold">Destination</span>
+          <input name="destination" list="cities" required
+                 class="mt-1 block w-full rounded-lg border p-2">
+          <datalist id="cities">
+            <option value="Phan Thiet"><option value="Da Nang">
+            <option value="Nha Trang"><option value="Phu Quoc">
+            <option value="Ha Noi"><option value="Sa Pa">
+            <option value="Hoi An"><option value="Da Lat">
+          </datalist>
+        </label>
+
+        <label>
+          <span class="text-sm font-semibold">Transport</span>
+          <select name="transport" class="mt-1 block w-full rounded-lg border p-2">
+            <option value="bus">Bus</option>
+            <option value="air">Air</option>
+            <option value="motorcycle">Motorcycle</option>
+            <option value="train">Train</option>
+          </select>
+        </label>
+
+        <label>
+          <span class="text-sm font-semibold">Trip type</span>
+          <select name="tripType" class="mt-1 block w-full rounded-lg border p-2">
+            <option value="beach">Beach</option>
+            <option value="mountain">Mountain</option>
+            <option value="city">City</option>
+            <option value="food">Food</option>
+            <option value="mixed">Mixed</option>
+          </select>
+        </label>
+
+        <label>
+          <span class="text-sm font-semibold">Days</span>
+          <input type="number" name="days" min="1" value="3" required
+                 class="mt-1 block w-full rounded-lg border p-2">
+        </label>
+
+        <label>
+          <span class="text-sm font-semibold">People</span>
+          <input type="number" name="people" min="1" value="2" required
+                 class="mt-1 block w-full rounded-lg border p-2">
+        </label>
+
+        <label>
+          <span class="text-sm font-semibold">Start date</span>
+          <input type="date" name="startDate" required
+                 class="mt-1 block w-full rounded-lg border p-2">
+        </label>
+
+        <label>
+          <span class="text-sm font-semibold">Budget (VND)</span>
+          <select name="budgetRange" class="mt-1 block w-full rounded-lg border p-2">
+            <option value="<5M">Under 5M</option>
+            <option value="5-15M">5–15M</option>
+            <option value="15-40M">15–40M</option>
+            <option value=">40M">Over 40M</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="flex gap-3 pt-4">
+        <button type="submit" name="mode" value="new"
+                class="flex-1 bg-sky-500 hover:bg-sky-600 text-white py-3 rounded-xl font-semibold">
+          Create new plan
+        </button>
+        <button type="submit" name="mode" value="template"
+                class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold">
+          Refer to a good plan
+        </button>
+      </div>
+    </form>
+
+    <section class="mt-8">
+      <h2 class="text-xl font-bold mb-3">My saved trips</h2>
+      <div id="saved-trips" class="space-y-2"></div>
+    </section>
+  </main>
+
+  <dialog id="template-modal" class="rounded-2xl p-0 w-11/12 max-w-xl">
+    <div class="p-6">
+      <h2 class="text-xl font-bold mb-4">Choose a template</h2>
+      <div id="template-list" class="space-y-2"></div>
+      <button id="template-close" class="mt-4 px-4 py-2 bg-gray-200 rounded-lg">
+        Cancel
+      </button>
+    </div>
+  </dialog>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
