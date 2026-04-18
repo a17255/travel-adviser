@@ -1,0 +1,10 @@
+[
+  {
+    "id": "phan-thiet-3d-bus",
+    "destination": "Phan Thiet",
+    "transport": "bus",
+    "days": 3,
+    "tripType": "beach",
+    "file": "phan-thiet-3d-bus.json"
+  }
+]

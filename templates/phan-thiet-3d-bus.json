@@ -1,0 +1,46 @@
+{
+  "id": "phan-thiet-3d-bus",
+  "destination": "Phan Thiet",
+  "transport": "bus",
+  "days": 3,
+  "people": 4,
+  "startDate": "2026-05-01",
+  "tripType": "beach",
+  "budgetRange": "5-15M",
+  "mode": "template",
+  "templateId": "phan-thiet-3d-bus",
+  "anchors": {
+    "flight":  { "status": "later", "data": null },
+    "lodging": { "status": "later", "data": null }
+  },
+  "config": {
+    "airportBufferDomestic": 90,
+    "airportBufferInternational": 150,
+    "checkInTime": "14:00",
+    "checkOutTime": "12:00"
+  },
+  "itinerary": [
+    { "id": "t1", "date": "2026-05-01", "timeStart": "05:30",
+      "activity": "Bus SGN \u2192 Phan Thiet", "where": "Mien Dong station",
+      "source": "user" },
+    { "id": "t2", "date": "2026-05-01", "timeStart": "11:30",
+      "activity": "Lunch",
+      "where": "Hai San Hong Phat - 122/30, Nguyen Trai, Phan Thiet",
+      "source": "user" },
+    { "id": "t3", "date": "2026-05-01", "timeStart": "14:00",
+      "activity": "Check in + pool", "where": "resort", "source": "user" },
+    { "id": "t4", "date": "2026-05-02", "timeStart": "05:30",
+      "activity": "Sunrise walk + pool", "where": "resort beach",
+      "source": "user" },
+    { "id": "t5", "date": "2026-05-03", "timeStart": "11:30",
+      "activity": "Check out + lunch + bus back", "where": "Phan Thiet",
+      "source": "user" }
+  ],
+  "fees": [],
+  "participants": [
+    { "name": "Phap",  "color": "#0ea5e9" },
+    { "name": "Bao",   "color": "#f59e0b" },
+    { "name": "Linh",  "color": "#10b981" },
+    { "name": "Trung", "color": "#f43f5e" }
+  ]
+}

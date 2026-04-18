@@ -1,0 +1,21 @@
+{
+  "airlines": {
+    "domestic": [
+      { "name": "Vietnam Airlines", "code": "VN", "url": "https://www.vietnamairlines.com" },
+      { "name": "VietJet Air",      "code": "VJ", "url": "https://www.vietjetair.com" },
+      { "name": "Bamboo Airways",   "code": "QH", "url": "https://www.bambooairways.com" }
+    ],
+    "international": [
+      { "name": "Vietnam Airlines", "code": "VN" },
+      { "name": "Singapore Airlines", "code": "SQ" },
+      { "name": "Cathay Pacific",   "code": "CX" }
+    ]
+  },
+  "hotels": {
+    "Phan Thiet": [
+      { "name": "Anantara Mui Ne Resort",   "tier": "luxury" },
+      { "name": "The Cliff Resort",         "tier": "mid"    },
+      { "name": "Mui Ne Backpackers Village","tier": "budget"}
+    ]
+  }
+}
