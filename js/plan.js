@@ -159,11 +159,19 @@ function itineraryCard() {
   return el("div", { id: "itinerary-host" });
 }
 
-function redraw() {
-  renderOverview();
-  renderAnchors();
+async function renderItinerary() {
+  const { renderItineraryInto, reseedAuto } = await import("./itinerary.js");
+  reseedAuto(trip);
+  const host = document.querySelector("#itinerary-host");
+  if (host) renderItineraryInto(host, trip, redraw);
 }
 
-renderAnchors();
+async function redraw() {
+  renderOverview();
+  await renderAnchors();
+  await renderItinerary();
+}
+
+redraw();
 
 export { trip, renderOverview };
