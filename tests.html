@@ -1,0 +1,12 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Tests</title></head>
+<body>
+<div id="out">Running…</div>
+<script type="module">
+import { render } from "./js/test-runner.js";
+await import("./tests/timing.test.js");
+await import("./tests/fees.test.js");
+await import("./tests/store.test.js");
+render(document.getElementById("out"));
+</script>
+</body></html>
