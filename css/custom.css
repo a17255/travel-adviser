@@ -193,6 +193,16 @@ main.wide { max-width: 90rem; padding: 1.5rem 2rem; }
 }
 .supplier-row:hover { background: var(--cream-2); }
 
+.tier-tag {
+  font-size: .7rem;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  align-self: center;
+}
+
 .checkbox-row {
   display: flex;
   align-items: center;

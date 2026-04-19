@@ -225,12 +225,12 @@ async function renderAnchors() {
     ? dedupeByKey(
         [...suppliers.airlines.domestic, ...(suppliers.airlines.international || [])],
         s => s.code || s.name)
-      .sort((a, b) => (a.priceFrom || Infinity) - (b.priceFrom || Infinity))
     : [];
 
+  const tierRank = { budget: 0, mid: 1, luxury: 2 };
   const hotelAll = (suppliers.hotels[trip.destination] || [])
     .slice()
-    .sort((a, b) => (a.priceFrom || Infinity) - (b.priceFrom || Infinity));
+    .sort((a, b) => (tierRank[a.tier] ?? 99) - (tierRank[b.tier] ?? 99));
 
   const row = el("div", { class: "anchor-row" });
   const fromCity = trip.anchors.flight.data?.from || "Ho Chi Minh";
@@ -290,7 +290,7 @@ function anchorCard(title, anchor, opts) {
 
   if (anchor.status === "book-now") {
     wrap.appendChild(el("p", { class: "muted", style: "font-size:.88rem; margin:.75rem 0 .5rem;" },
-      "Sorted by starting price. Click a supplier to open their site in a new tab, then paste the confirmation email below."));
+      "Click a supplier to open their page with your route/dates pre-filled — live prices are shown there. After booking, paste the confirmation email below."));
 
     const list = el("div", { class: "stack", style: "margin-bottom:1rem;" });
     const pageSize = 3;
@@ -336,8 +336,6 @@ function anchorCard(title, anchor, opts) {
     }
     wrap.appendChild(list);
 
-    wrap.appendChild(el("p", { class: "muted", style: "font-size:.8rem; margin:.5rem 0 0;" },
-      "💡 Starting prices are rough estimates. Click a supplier above to see live prices for your route."));
 
     wrap.appendChild(smartPastePanel(opts.parser, opts.onSave));
   } else if (anchor.status === "booked") {
@@ -386,6 +384,12 @@ function anchorCard(title, anchor, opts) {
   return wrap;
 }
 
+const TIER_LABEL = {
+  budget: { text: "Budget",  color: "#059669" },
+  mid:    { text: "Mid",     color: "#C68642" },
+  luxury: { text: "Luxury",  color: "#8B4513" }
+};
+
 function renderSupplierList(host, suggestions) {
   if (suggestions.length === 0) {
     host.appendChild(el("p", { class: "muted", style: "font-size:.88rem;" },
@@ -396,14 +400,13 @@ function renderSupplierList(host, suggestions) {
     const row = el("div", { class: "supplier-row" });
     const left = el("div", {}, [
       el("div", { style: "font-weight:600;" }, sup.name),
-      el("div", { class: "muted", style: "font-size:.8rem;" },
-        [sup.tier, sup.note].filter(Boolean).join(" • "))
+      el("div", { class: "muted", style: "font-size:.8rem;" }, sup.note || "")
     ]);
-    const priceLabel = sup.priceFrom
-      ? el("div", { class: "muted", style: "font-size:.85rem; text-align:right;" }, [
-          el("div", { class: "muted", style: "font-size:.7rem;" }, "from"),
-          el("strong", { style: "color:var(--brown-dk); font-size:1rem;" }, formatVND(sup.priceFrom))
-        ])
+    const tierTag = sup.tier && TIER_LABEL[sup.tier]
+      ? el("span", {
+          class: "tier-tag",
+          style: `background:${TIER_LABEL[sup.tier].color}1a; color:${TIER_LABEL[sup.tier].color};`
+        }, TIER_LABEL[sup.tier].text)
       : null;
     const action = sup.url
       ? el("a", {
@@ -414,7 +417,8 @@ function renderSupplierList(host, suggestions) {
       : el("span", { class: "muted", style: "font-size:.85rem;" }, "no link");
 
     row.appendChild(left);
-    if (priceLabel) row.appendChild(priceLabel);
+    if (tierTag) row.appendChild(tierTag);
+    else row.appendChild(el("span", {}));  // keep grid column alignment
     row.appendChild(action);
     host.appendChild(row);
   });
