@@ -1,6 +1,6 @@
 import { autoRows } from "./timing.js";
 import { generatePlan } from "./planner.js";
-import { el, uuid } from "./ui.js";
+import { el, uuid, mapsUrl } from "./ui.js";
 
 export function reseedAuto(trip) {
   const keep = trip.itinerary.filter(r => r.source !== "auto");
@@ -87,7 +87,22 @@ export function renderItineraryInto(host, trip, onChange) {
     if (overlapsAuto(r, trip.itinerary))
       actCell.appendChild(el("span", { class: "badge badge-overlap", style: "margin-left:.4rem;" }, "overlaps"));
     tr.appendChild(actCell);
-    tr.appendChild(el("td", {}, whereIn));
+    const whereCell = el("td", { class: "row", style: "gap:.25rem;" });
+    whereCell.appendChild(whereIn);
+    const mapBtn = el("a", {
+      class: "btn-ghost",
+      title: "Open in Google Maps",
+      target: "_blank", rel: "noopener",
+      style: "padding:.25rem .4rem;"
+    }, "🗺");
+    const updateMapHref = () => {
+      mapBtn.href = r.where ? mapsUrl(r.where) : "javascript:void(0)";
+      mapBtn.style.opacity = r.where ? "1" : ".3";
+    };
+    updateMapHref();
+    whereIn.addEventListener("input", updateMapHref);
+    whereCell.appendChild(mapBtn);
+    tr.appendChild(whereCell);
     tr.appendChild(el("td", {}, el("button", {
       class: "btn-ghost",
       onclick: () => {

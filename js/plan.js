@@ -1,8 +1,10 @@
 import { loadCurrentTrip, saveCurrentTrip, saveTrip, getProfile } from "./store.js";
-import { qs, qsa, el, formatVND, uuid, download, pickJSON, encodeTrip } from "./ui.js";
+import { qs, qsa, el, formatVND, uuid, download, pickJSON, encodeTrip, hostOf, buildICS } from "./ui.js";
 import { loadSuppliers } from "./templates.js";
 import { shareOf, netPerParticipant, suggestSettlement } from "./fees.js";
 import { parseFlight, parseLodging } from "./parser.js";
+import { flightSearchUrl, hotelSearchUrl } from "./iata.js";
+import { generatePackingList } from "./packing.js";
 
 const trip = loadCurrentTrip();
 if (!trip) { location.href = "index.html"; throw new Error("no trip"); }
@@ -33,8 +35,9 @@ function dedupeByKey(list, keyFn) {
   });
 }
 
-qs("#trip-title").textContent =
-  `${trip.destination} — ${trip.days}d ${trip.transport}`;
+const titleText = `${trip.destination} — ${trip.days}d ${trip.transport}`;
+qs("#trip-title").textContent = titleText;
+document.body.setAttribute("data-trip-title", titleText);
 
 function renderOverview() {
   const f = trip.anchors.flight.data;
@@ -68,20 +71,92 @@ qs("#import-trip")?.addEventListener("click", async () => {
 });
 
 qs("#share-trip")?.addEventListener("click", async () => {
-  const encoded = encodeTrip(trip);
+  const encoded = await encodeTrip(trip);
   const base = location.href.split("#")[0].replace(/plan\.html.*$/, "");
   const url  = `${base}#trip=${encoded}`;
-  if (url.length > 7500) {
-    alert("This trip is too big for a share link (too many rows). Use Export JSON and send the file instead.");
-    return;
-  }
-  try {
-    await navigator.clipboard.writeText(url);
-    alert("Share link copied to clipboard.\nLink length: " + url.length + " chars.\nPaste it to your friend — they open and see the same trip.");
-  } catch {
-    prompt("Copy this link:", url);
-  }
+  openShareModal(url);
 });
+
+qs("#print-trip")?.addEventListener("click", () => {
+  document.body.classList.add("print-mode");
+  window.print();
+  setTimeout(() => document.body.classList.remove("print-mode"), 500);
+});
+
+qs("#ics-trip")?.addEventListener("click", () => {
+  const name = (trip.destination || "trip").toLowerCase().replace(/\s+/g, "-");
+  download(`${name}.ics`, buildICS(trip));
+});
+
+qs("#packing-trip")?.addEventListener("click", () => {
+  openPackingModal();
+});
+
+function openShareModal(url) {
+  const dialog = document.createElement("dialog");
+  dialog.className = "share-modal";
+  const oversized = url.length > 7500;
+
+  dialog.innerHTML = `
+    <div class="card">
+      <h2 style="margin:0 0 .5rem;">Share link</h2>
+      <p class="muted" style="font-size:.88rem;">Anyone with this link can view a snapshot of your trip. Their edits don't sync back.</p>
+      ${oversized ? `<p style="color:var(--rose);">⚠️ This trip is too big for a share link (${url.length} chars). Use <strong>Export</strong> to send a JSON file instead.</p>` : ""}
+      <textarea id="share-url" readonly rows="4" style="width:100%; font-family:monospace; font-size:.8rem; word-break:break-all;">${url}</textarea>
+      <div class="row-wrap" style="margin-top:.75rem; justify-content: space-between;">
+        <span class="muted" style="font-size:.8rem;">${url.length} chars</span>
+        <div class="row-wrap">
+          <button id="share-copy" class="btn btn-primary btn-sm">Copy to clipboard</button>
+          <button id="share-close" class="btn btn-outline btn-sm">Close</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(dialog);
+  dialog.showModal();
+  dialog.querySelector("#share-copy").onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      dialog.querySelector("#share-copy").textContent = "✓ Copied";
+    } catch {
+      dialog.querySelector("#share-url").select();
+    }
+  };
+  dialog.querySelector("#share-close").onclick = () => {
+    dialog.close();
+    dialog.remove();
+  };
+}
+
+function openPackingModal() {
+  const items = generatePackingList(trip);
+  const dialog = document.createElement("dialog");
+  dialog.className = "share-modal";
+  dialog.innerHTML = `
+    <div class="card" style="max-height:80vh; overflow:auto;">
+      <h2 style="margin:0 0 .5rem;">Packing checklist</h2>
+      <p class="muted" style="font-size:.88rem;">Auto-generated for <strong>${trip.tripType}</strong> trip, ${trip.days} days${trip.anchors?.flight?.data?.international ? ", international" : ""}. Tap items to check off.</p>
+      <ul id="packing-list" style="list-style:none; padding:0; columns:2; column-gap:2rem;">
+        ${items.map((i, idx) => `<li style="break-inside:avoid; padding:.25rem 0;"><label style="cursor:pointer;"><input type="checkbox" id="pk-${idx}" style="margin-right:.5rem;">${i}</label></li>`).join("")}
+      </ul>
+      <div class="row-wrap" style="margin-top:1rem; justify-content: space-between;">
+        <button id="packing-copy" class="btn btn-outline btn-sm">Copy as text</button>
+        <button id="packing-close" class="btn btn-primary btn-sm">Close</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(dialog);
+  dialog.showModal();
+  dialog.querySelector("#packing-copy").onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(items.map(i => "[ ] " + i).join("\n"));
+      dialog.querySelector("#packing-copy").textContent = "✓ Copied";
+    } catch {}
+  };
+  dialog.querySelector("#packing-close").onclick = () => {
+    dialog.close(); dialog.remove();
+  };
+}
 
 qsa(".tab-btn").forEach(btn => {
   btn.addEventListener("click", () => {
@@ -95,9 +170,55 @@ qsa(".tab-btn").forEach(btn => {
   });
 });
 
+function renderDashboard() {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const start = trip.startDate ? new Date(trip.startDate + "T00:00") : null;
+  const daysTo = start ? Math.round((start - today) / (1000 * 60 * 60 * 24)) : null;
+  const totalFees = (trip.fees || []).filter(f => !f.voided).reduce((s, f) => s + (f.amount || 0), 0);
+  const rowsCount = (trip.itinerary || []).length;
+  const flightStatus = trip.anchors.flight.status;
+  const lodgeStatus  = trip.anchors.lodging.status;
+
+  const statusBadge = (label, s) => {
+    const emoji = s === "booked" ? "✅" : s === "book-now" ? "🔍" : "⏳";
+    return el("span", { class: "dash-badge" }, `${emoji} ${label}: ${s}`);
+  };
+
+  const daysCell = start
+    ? (daysTo > 0 ? `${daysTo} days to go`
+       : daysTo === 0 ? "Today!"
+       : `Ended ${-daysTo}d ago`)
+    : "No start date";
+
+  return el("div", { class: "card dashboard" }, [
+    el("div", { class: "dash-tile" }, [
+      el("div", { class: "muted", style: "font-size:.75rem; text-transform:uppercase; letter-spacing:1px;" }, "Countdown"),
+      el("div", { style: "font-size:1.5rem; font-weight:700; color:var(--brown-dk);" }, daysCell)
+    ]),
+    el("div", { class: "dash-tile" }, [
+      el("div", { class: "muted", style: "font-size:.75rem; text-transform:uppercase; letter-spacing:1px;" }, "Plan size"),
+      el("div", { style: "font-size:1.5rem; font-weight:700; color:var(--brown-dk);" }, `${rowsCount} activities`),
+      el("div", { class: "muted", style: "font-size:.8rem;" }, `${trip.days} days • ${trip.people} people`)
+    ]),
+    el("div", { class: "dash-tile" }, [
+      el("div", { class: "muted", style: "font-size:.75rem; text-transform:uppercase; letter-spacing:1px;" }, "Spent so far"),
+      el("div", { style: "font-size:1.5rem; font-weight:700; color:var(--brown-dk);" }, formatVND(totalFees)),
+      el("div", { class: "muted", style: "font-size:.8rem;" }, `${(trip.fees || []).filter(f => !f.voided).length} fees logged`)
+    ]),
+    el("div", { class: "dash-tile", style: "grid-column: 1 / -1;" }, [
+      el("div", { class: "muted", style: "font-size:.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:.35rem;" }, "Status"),
+      el("div", { class: "row-wrap" }, [
+        statusBadge("Flight", flightStatus),
+        statusBadge("Lodging", lodgeStatus)
+      ])
+    ])
+  ]);
+}
+
 async function renderAnchors() {
   const host = qs("#tab-plan");
   host.innerHTML = "";
+  host.appendChild(renderDashboard());
   const suppliers = await loadSuppliers();
 
   const airlineAll = trip.transport === "air"
@@ -112,12 +233,15 @@ async function renderAnchors() {
     .sort((a, b) => (a.priceFrom || Infinity) - (b.priceFrom || Infinity));
 
   const row = el("div", { class: "anchor-row" });
+  const fromCity = trip.anchors.flight.data?.from || "Ho Chi Minh";
+  const toCity   = trip.anchors.flight.data?.to   || trip.destination;
   row.appendChild(anchorCard("Flight", trip.anchors.flight, {
     onStatus: (s) => { trip.anchors.flight.status = s; redraw(); },
     onSave: (data) => { trip.anchors.flight.data = data; redraw(); },
     initialCount: airlineAll.length,
     suggestions: airlineAll,
     compare: suppliers.airlines.compare || [],
+    buildCompareUrl: (name) => flightSearchUrl(name, fromCity, toCity, trip.startDate),
     fields: [
       { key: "depart",        label: "Depart (local time)",  type: "datetime-local" },
       { key: "arrive",        label: "Arrive (local time)",  type: "datetime-local" },
@@ -127,12 +251,16 @@ async function renderAnchors() {
     ],
     parser: parseFlight
   }));
+  const checkIn  = trip.anchors.lodging.data?.checkInDate  || trip.startDate;
+  const checkOut = trip.anchors.lodging.data?.checkOutDate ||
+    (trip.startDate ? addDaysISO(trip.startDate, Number(trip.days) || 2) : "");
   row.appendChild(anchorCard("Lodging", trip.anchors.lodging, {
     onStatus: (s) => { trip.anchors.lodging.status = s; redraw(); },
     onSave: (data) => { trip.anchors.lodging.data = data; redraw(); },
     initialCount: 3,
     suggestions: hotelAll,
     compare: suppliers.hotels.compare || [],
+    buildCompareUrl: (name) => hotelSearchUrl(name, trip.destination, checkIn, checkOut),
     fields: [
       { key: "checkInDate",  label: "Check-in date",  type: "date" },
       { key: "checkOutDate", label: "Check-out date", type: "date" },
@@ -164,32 +292,52 @@ function anchorCard(title, anchor, opts) {
     wrap.appendChild(el("p", { class: "muted", style: "font-size:.88rem; margin:.75rem 0 .5rem;" },
       "Sorted by starting price. Click a supplier to open their site in a new tab, then paste the confirmation email below."));
 
-    const showN = 3;
-    const primary = opts.suggestions.slice(0, showN);
-    const extra   = opts.suggestions.slice(showN);
-
     const list = el("div", { class: "stack", style: "margin-bottom:1rem;" });
-    renderSupplierList(list, primary);
-    if (extra.length) {
-      const details = el("details", { style: "margin-top:.5rem;" });
-      details.appendChild(el("summary", { class: "more-summary" },
-        `Show more options (${extra.length} more)`));
-      const wrap2 = el("div", { class: "stack", style: "margin-top:.5rem;" });
-      renderSupplierList(wrap2, extra);
-      details.appendChild(wrap2);
-      list.appendChild(details);
+    const pageSize = 3;
+    const state = { shown: pageSize };
+
+    const listHost = el("div", { class: "stack" });
+    list.appendChild(listHost);
+
+    const moreBtn = el("button", {
+      class: "btn btn-outline btn-sm",
+      style: "margin-top:.5rem;",
+      onclick: () => {
+        state.shown = Math.min(state.shown + 5, opts.suggestions.length);
+        redrawList();
+      }
+    }, "Show more options");
+    list.appendChild(moreBtn);
+
+    function redrawList() {
+      listHost.innerHTML = "";
+      renderSupplierList(listHost, opts.suggestions.slice(0, state.shown));
+      const remaining = opts.suggestions.length - state.shown;
+      if (remaining > 0) {
+        moreBtn.textContent = `+ Show ${Math.min(5, remaining)} more (${remaining} left)`;
+        moreBtn.style.display = "";
+      } else {
+        moreBtn.style.display = "none";
+      }
     }
+    redrawList();
+
     if (opts.compare.length) {
       const compareRow = el("div", { class: "row-wrap", style: "margin-top:.75rem; font-size:.85rem;" });
-      compareRow.appendChild(el("span", { class: "muted" }, "Compare prices:"));
-      opts.compare.forEach(c =>
+      compareRow.appendChild(el("span", { class: "muted" }, "Compare live prices for your route:"));
+      opts.compare.forEach(c => {
+        const href = opts.buildCompareUrl ? (opts.buildCompareUrl(c.name) || c.url) : c.url;
         compareRow.appendChild(el("a", {
-          href: c.url, target: "_blank", rel: "noopener",
+          href, target: "_blank", rel: "noopener",
           style: "color:var(--caramel); font-weight:600;"
-        }, c.name + " ↗")));
+        }, c.name + " ↗"));
+      });
       list.appendChild(compareRow);
     }
     wrap.appendChild(list);
+
+    wrap.appendChild(el("p", { class: "muted", style: "font-size:.8rem; margin:.5rem 0 0;" },
+      "💡 Starting prices are rough estimates. Click a supplier above to see live prices for your route."));
 
     wrap.appendChild(smartPastePanel(opts.parser, opts.onSave));
   } else if (anchor.status === "booked") {
@@ -260,8 +408,9 @@ function renderSupplierList(host, suggestions) {
     const action = sup.url
       ? el("a", {
           href: sup.url, target: "_blank", rel: "noopener",
-          class: "btn btn-accent btn-sm"
-        }, "Book ↗")
+          class: "btn btn-accent btn-sm",
+          title: sup.url
+        }, `Book on ${hostOf(sup.url)} ↗`)
       : el("span", { class: "muted", style: "font-size:.85rem;" }, "no link");
 
     row.appendChild(left);
@@ -273,11 +422,16 @@ function renderSupplierList(host, suggestions) {
 
 function smartPastePanel(parser, onSave, { compact = false } = {}) {
   const panel = el("div", { class: compact ? "" : "subpanel" });
-  if (!compact) panel.appendChild(el("h3", { style: "margin:0 0 .5rem; font-size:1rem;" },
-    "Smart paste — confirmation email"));
+  if (!compact) {
+    panel.appendChild(el("h3", { style: "margin:0 0 .25rem; font-size:1rem;" },
+      "Smart paste — confirmation email"));
+    panel.appendChild(el("p", { class: "muted", style: "font-size:.8rem; margin:0 0 .5rem;" },
+      "Already booked? Paste the confirmation email (from the airline or hotel) and we'll auto-extract the key details — flight number, PNR, airports, dates, times, hotel name, check-in/out."));
+  }
 
   const ta = el("textarea", {
-    rows: compact ? 3 : 5, placeholder: "Paste the confirmation email…",
+    rows: compact ? 3 : 5,
+    placeholder: "Paste the full confirmation email body here. Example: \"Your Vietnam Airlines booking VN1234 on 2026-05-01 09:00 SGN → PQC, confirmation code ABC123…\"",
     style: "width:100%"
   });
   panel.appendChild(ta);

@@ -215,3 +215,75 @@ main.wide { max-width: 90rem; padding: 1.5rem 2rem; }
   padding: .4rem 0;
 }
 .more-summary:hover { color: var(--accent); }
+
+.home-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: 999px;
+  background: var(--cream-2); color: var(--brown-dk);
+  text-decoration: none;
+  transition: background .15s ease, transform .15s ease;
+}
+.home-btn:hover { background: var(--caramel); color: #fff; transform: translateY(-1px); }
+
+.dashboard {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+.dash-tile {
+  padding: .75rem;
+  background: var(--cream);
+  border-radius: 10px;
+}
+.dash-badge {
+  display: inline-block;
+  padding: .3rem .7rem;
+  background: #fff;
+  border-radius: 999px;
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--brown-dk);
+}
+@media (max-width: 640px) {
+  .dashboard { grid-template-columns: 1fr; }
+}
+
+.share-modal {
+  border: none;
+  border-radius: 16px;
+  padding: 0;
+  max-width: 36rem;
+  width: 92%;
+  background: transparent;
+}
+.share-modal::backdrop { background: rgba(62, 39, 35, 0.4); backdrop-filter: blur(4px); }
+.share-modal .card { margin: 0; }
+
+/* Print mode — strip chrome, emit a clean itinerary */
+@media print {
+  body.print-mode .nav-top,
+  body.print-mode .dashboard,
+  body.print-mode .anchor-row,
+  body.print-mode details,
+  body.print-mode .status-seg,
+  body.print-mode .subpanel,
+  body.print-mode #tab-fees,
+  body.print-mode button,
+  body.print-mode .btn-ghost { display: none !important; }
+  body.print-mode #tab-plan > :not(#itinerary-host) { display: none !important; }
+  body.print-mode { background: #fff; }
+  body.print-mode main { max-width: 100%; padding: 0; }
+  body.print-mode table.itinerary input { border: none; background: transparent; padding: 0; }
+  body.print-mode .card { box-shadow: none; border: 1px solid #eee; }
+  body.print-mode::before {
+    content: "Travel Adviser — " attr(data-trip-title);
+    display: block;
+    font-family: "Playfair Display", serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #3E2723;
+    padding: 1rem 0 .5rem;
+    border-bottom: 2px solid #C68642;
+    margin-bottom: 1rem;
+  }
+}

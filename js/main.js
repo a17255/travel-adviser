@@ -3,9 +3,10 @@ import { findTemplates } from "./templates.js";
 import { el, qs, uuid, decodeTrip } from "./ui.js";
 
 // If URL hash contains a shared trip, load it directly.
-const hashMatch = location.hash.match(/^#trip=(.+)$/);
-if (hashMatch) {
-  const shared = decodeTrip(hashMatch[1]);
+(async () => {
+  const hashMatch = location.hash.match(/^#trip=(.+)$/);
+  if (!hashMatch) return;
+  const shared = await decodeTrip(hashMatch[1]);
   if (shared && shared.destination) {
     saveCurrentTrip(shared);
     history.replaceState(null, "", location.pathname);
@@ -13,7 +14,7 @@ if (hashMatch) {
   } else {
     alert("That share link looks corrupt — couldn't load the trip.");
   }
-}
+})();
 
 function formDataToTrip(fd) {
   return {

@@ -14,13 +14,20 @@
 <body>
   <header class="nav-top">
     <div class="nav-inner row">
-      <a href="index.html" class="btn-ghost" style="font-weight:600;">← Home</a>
+      <a href="index.html" class="home-btn" title="Back to home">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12 L12 3 L21 12"/><path d="M5 10 V20 a1 1 0 0 0 1 1 h4 v-6 h4 v6 h4 a1 1 0 0 0 1 -1 V10"/>
+        </svg>
+      </a>
       <h1 id="trip-title" style="font-size:1.15rem; margin:0; flex:1; font-family:inherit; color:var(--brown-dk);">Trip</h1>
       <div class="row-wrap">
-        <button id="export-trip" class="btn btn-outline btn-sm" title="Download as JSON file">Export</button>
-        <button id="import-trip" class="btn btn-outline btn-sm" title="Load a trip from JSON file">Import</button>
-        <button id="share-trip" class="btn btn-outline btn-sm" title="Copy a shareable link">Share link</button>
-        <button id="save-trip" class="btn btn-primary btn-sm">Save trip</button>
+        <button id="packing-trip" class="btn btn-outline btn-sm" title="Generate packing checklist">🎒 Packing</button>
+        <button id="ics-trip"     class="btn btn-outline btn-sm" title="Download calendar (.ics) — import to Google Calendar">📅 Calendar</button>
+        <button id="print-trip"   class="btn btn-outline btn-sm" title="Printable view">🖨 Print</button>
+        <button id="export-trip"  class="btn btn-outline btn-sm" title="Download as JSON file">Export</button>
+        <button id="import-trip"  class="btn btn-outline btn-sm" title="Load a trip from JSON file">Import</button>
+        <button id="share-trip"   class="btn btn-outline btn-sm" title="Copy a shareable link">Share</button>
+        <button id="save-trip"    class="btn btn-primary btn-sm">Save trip</button>
       </div>
     </div>
     <div id="overview" class="nav-inner muted" style="padding-top:0; padding-bottom:.5rem;"></div>
