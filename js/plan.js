@@ -2,6 +2,7 @@ import { loadCurrentTrip, saveCurrentTrip, saveTrip, getProfile } from "./store.
 import { qs, qsa, el, formatVND, uuid } from "./ui.js";
 import { loadSuppliers } from "./templates.js";
 import { shareOf, netPerParticipant, suggestSettlement } from "./fees.js";
+import { parseFlight, parseLodging } from "./parser.js";
 
 const trip = loadCurrentTrip();
 if (!trip) { location.href = "index.html"; throw new Error("no trip"); }
@@ -50,7 +51,7 @@ async function renderAnchors() {
     onStatus: (s) => { trip.anchors.flight.status = s; redraw(); },
     onSave: (data) => { trip.anchors.flight.data = data; redraw(); },
     suggestions: trip.transport === "air"
-      ? suppliers.airlines.domestic
+      ? [...suppliers.airlines.domestic, ...(suppliers.airlines.international || [])]
       : [],
     fields: ["depart", "arrive", "from", "to", "international"]
   }));
@@ -58,7 +59,7 @@ async function renderAnchors() {
   host.appendChild(anchorCard("Lodging", trip.anchors.lodging, {
     onStatus: (s) => { trip.anchors.lodging.status = s; redraw(); },
     onSave: (data) => { trip.anchors.lodging.data = data; redraw(); },
-    suggestions: suppliers.hotels[trip.destination] || [],
+    suggestions: suppliers.hotels[trip.destination] || suppliers.hotels.__fallback__ || [],
     fields: ["checkInDate", "checkOutDate", "name"]
   }));
 
@@ -83,30 +84,73 @@ function anchorCard(title, anchor, opts) {
   wrap.appendChild(selector);
 
   if (anchor.status === "book-now") {
-    const list = el("div", { class: "space-y-1" });
+    wrap.appendChild(el("p", { class: "text-sm text-gray-600 mb-2" },
+      "1. Open a supplier below → book on their site. 2. Paste the confirmation email here, or click \"booked\" to fill manually."));
+
+    const list = el("div", { class: "space-y-1 mb-4" });
     opts.suggestions.forEach(sup => {
-      list.appendChild(el("div", {
+      const row = el("div", {
         class: "flex justify-between items-center p-2 bg-gray-50 rounded-lg"
-      }, [
-        el("span", {}, `${sup.name}${sup.tier ? " — " + sup.tier : ""}`),
-        el("button", {
-          class: "text-sky-600 text-sm",
-          onclick: () => {
-            const data = { provider: sup.name };
-            opts.fields.forEach(f => {
-              data[f] = prompt(`${f}?`) || "";
-              if (f === "international") data[f] = data[f] === "true";
-            });
-            opts.onSave(data);
-          }
-        }, "Mark as booked")
-      ]));
+      }, [ el("span", {}, `${sup.name}${sup.tier ? " — " + sup.tier : ""}`) ]);
+      if (sup.url) {
+        const link = el("a", {
+          href: sup.url, target: "_blank", rel: "noopener",
+          class: "text-sky-600 text-sm font-semibold hover:underline"
+        }, "Book on supplier ↗");
+        row.appendChild(link);
+      } else {
+        row.appendChild(el("span", { class: "text-gray-400 text-sm" },
+          "no link available"));
+      }
+      list.appendChild(row);
     });
     if (opts.suggestions.length === 0) {
       list.appendChild(el("p", { class: "text-gray-500 text-sm" },
-        "No suggestions for this destination/transport. Use 'booked' to enter manually."));
+        "No curated suppliers for this destination/transport. Use the paste box below, or switch to \"booked\" to enter fields manually."));
     }
     wrap.appendChild(list);
+
+    // Smart-paste panel
+    const pasteWrap = el("div", { class: "mt-2 p-3 bg-sky-50 rounded-lg" });
+    pasteWrap.appendChild(el("h3", { class: "text-sm font-semibold mb-2" },
+      "Smart paste — confirmation email"));
+    const ta = el("textarea", {
+      class: "w-full border rounded-lg p-2 text-sm",
+      rows: 5,
+      placeholder: "Paste the full confirmation email here…"
+    });
+    pasteWrap.appendChild(ta);
+
+    const preview = el("div", { class: "mt-2 text-sm" });
+    const parseBtn = el("button", {
+      class: "mt-2 px-3 py-1 bg-emerald-600 text-white rounded-lg text-sm",
+      onclick: () => {
+        const fn = title === "Flight" ? parseFlight : parseLodging;
+        const data = fn(ta.value);
+        preview.innerHTML = "";
+        if (!data) {
+          preview.appendChild(el("p", { class: "text-rose-600" },
+            "Couldn't parse. Switch to \"booked\" to enter manually."));
+          return;
+        }
+        const rows = Object.entries(data).filter(([, v]) => v !== "");
+        const tbl = el("table", { class: "w-full text-left" });
+        rows.forEach(([k, v]) =>
+          tbl.appendChild(el("tr", {}, [
+            el("td", { class: "pr-3 font-semibold" }, k),
+            el("td", {}, String(v))
+          ])));
+        preview.appendChild(tbl);
+        const save = el("button", {
+          class: "mt-2 px-3 py-1 bg-sky-500 text-white rounded-lg text-sm",
+          onclick: () => opts.onSave(data)
+        }, "Save these details");
+        preview.appendChild(save);
+      }
+    }, "Parse");
+    pasteWrap.appendChild(parseBtn);
+    pasteWrap.appendChild(preview);
+    wrap.appendChild(pasteWrap);
   } else if (anchor.status === "booked") {
     const form = el("div", { class: "grid grid-cols-2 gap-2" });
     opts.fields.forEach(f => {

@@ -13,9 +13,14 @@
   },
   "hotels": {
     "Phan Thiet": [
-      { "name": "Anantara Mui Ne Resort",   "tier": "luxury" },
-      { "name": "The Cliff Resort",         "tier": "mid"    },
-      { "name": "Mui Ne Backpackers Village","tier": "budget"}
+      { "name": "Anantara Mui Ne Resort",    "tier": "luxury", "url": "https://www.booking.com/searchresults.html?ss=Anantara+Mui+Ne+Resort" },
+      { "name": "The Cliff Resort",          "tier": "mid",    "url": "https://www.booking.com/searchresults.html?ss=The+Cliff+Resort+Mui+Ne" },
+      { "name": "Mui Ne Backpackers Village","tier": "budget", "url": "https://www.booking.com/searchresults.html?ss=Mui+Ne+Backpackers+Village" }
+    ],
+    "__fallback__": [
+      { "name": "Booking.com", "tier": "",       "url": "https://www.booking.com" },
+      { "name": "Agoda",       "tier": "",       "url": "https://www.agoda.com" },
+      { "name": "Traveloka",   "tier": "",       "url": "https://www.traveloka.com" }
     ]
   }
 }
