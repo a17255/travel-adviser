@@ -1,5 +1,5 @@
 import { loadCurrentTrip, saveCurrentTrip, saveTrip, getProfile } from "./store.js";
-import { qs, qsa, el, formatVND, uuid } from "./ui.js";
+import { qs, qsa, el, formatVND, uuid, download, pickJSON, encodeTrip } from "./ui.js";
 import { loadSuppliers } from "./templates.js";
 import { shareOf, netPerParticipant, suggestSettlement } from "./fees.js";
 import { parseFlight, parseLodging } from "./parser.js";
@@ -49,7 +49,38 @@ renderOverview();
 qs("#save-trip").addEventListener("click", () => {
   saveTrip(trip);
   saveCurrentTrip(trip);
-  alert("Trip saved.");
+  alert("Trip saved to your browser.");
+});
+
+qs("#export-trip")?.addEventListener("click", () => {
+  const name = (trip.destination || "trip").toLowerCase().replace(/\s+/g, "-");
+  download(`${name}-${trip.startDate || "plan"}.json`, JSON.stringify(trip, null, 2));
+});
+
+qs("#import-trip")?.addEventListener("click", async () => {
+  const data = await pickJSON();
+  if (!data) { alert("Could not parse that JSON file."); return; }
+  if (!data.destination) { alert("That file doesn't look like a trip."); return; }
+  if (!confirm(`Replace the current trip with "${data.destination}"?`)) return;
+  Object.assign(trip, data);
+  saveCurrentTrip(trip);
+  location.reload();
+});
+
+qs("#share-trip")?.addEventListener("click", async () => {
+  const encoded = encodeTrip(trip);
+  const base = location.href.split("#")[0].replace(/plan\.html.*$/, "");
+  const url  = `${base}#trip=${encoded}`;
+  if (url.length > 7500) {
+    alert("This trip is too big for a share link (too many rows). Use Export JSON and send the file instead.");
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    alert("Share link copied to clipboard.\nLink length: " + url.length + " chars.\nPaste it to your friend — they open and see the same trip.");
+  } catch {
+    prompt("Copy this link:", url);
+  }
 });
 
 qsa(".tab-btn").forEach(btn => {
@@ -69,38 +100,54 @@ async function renderAnchors() {
   host.innerHTML = "";
   const suppliers = await loadSuppliers();
 
-  const airlineSuggestions = trip.transport === "air"
+  const airlineAll = trip.transport === "air"
     ? dedupeByKey(
         [...suppliers.airlines.domestic, ...(suppliers.airlines.international || [])],
         s => s.code || s.name)
+      .sort((a, b) => (a.priceFrom || Infinity) - (b.priceFrom || Infinity))
     : [];
 
-  host.appendChild(anchorCard("Flight", trip.anchors.flight, {
+  const hotelAll = (suppliers.hotels[trip.destination] || [])
+    .slice()
+    .sort((a, b) => (a.priceFrom || Infinity) - (b.priceFrom || Infinity));
+
+  const row = el("div", { class: "anchor-row" });
+  row.appendChild(anchorCard("Flight", trip.anchors.flight, {
     onStatus: (s) => { trip.anchors.flight.status = s; redraw(); },
     onSave: (data) => { trip.anchors.flight.data = data; redraw(); },
-    suggestions: airlineSuggestions,
-    extraSuggestions: [],
-    fields: ["depart", "arrive", "from", "to", "international"],
+    initialCount: airlineAll.length,
+    suggestions: airlineAll,
+    compare: suppliers.airlines.compare || [],
+    fields: [
+      { key: "depart",        label: "Depart (local time)",  type: "datetime-local" },
+      { key: "arrive",        label: "Arrive (local time)",  type: "datetime-local" },
+      { key: "from",          label: "From airport (IATA)",  type: "text" },
+      { key: "to",            label: "To airport (IATA)",    type: "text" },
+      { key: "international", label: "International flight", type: "checkbox" }
+    ],
     parser: parseFlight
   }));
-
-  const curatedHotels = suppliers.hotels[trip.destination] || [];
-  const fallbackHotels = suppliers.hotels.__fallback__ || [];
-  host.appendChild(anchorCard("Lodging", trip.anchors.lodging, {
+  row.appendChild(anchorCard("Lodging", trip.anchors.lodging, {
     onStatus: (s) => { trip.anchors.lodging.status = s; redraw(); },
     onSave: (data) => { trip.anchors.lodging.data = data; redraw(); },
-    suggestions: curatedHotels.length ? curatedHotels : fallbackHotels,
-    extraSuggestions: curatedHotels.length ? fallbackHotels : [],
-    fields: ["checkInDate", "checkOutDate", "name"],
+    initialCount: 3,
+    suggestions: hotelAll,
+    compare: suppliers.hotels.compare || [],
+    fields: [
+      { key: "checkInDate",  label: "Check-in date",  type: "date" },
+      { key: "checkOutDate", label: "Check-out date", type: "date" },
+      { key: "name",         label: "Hotel / resort name", type: "text" }
+    ],
     parser: parseLodging
   }));
+  host.appendChild(row);
 
   host.appendChild(configCard());
   host.appendChild(itineraryHost());
 }
 
 function anchorCard(title, anchor, opts) {
-  const wrap = el("div", { class: "card" });
+  const wrap = el("div", { class: "card anchor-card" });
   wrap.appendChild(el("h2", { style: "margin:0 0 .75rem" }, title));
 
   const seg = el("div", { class: "status-seg" });
@@ -115,18 +162,32 @@ function anchorCard(title, anchor, opts) {
 
   if (anchor.status === "book-now") {
     wrap.appendChild(el("p", { class: "muted", style: "font-size:.88rem; margin:.75rem 0 .5rem;" },
-      "1. Pick a supplier to book on their site. 2. Paste the confirmation email below, or switch to \"Booked\" for manual entry."));
+      "Sorted by starting price. Click a supplier to open their site in a new tab, then paste the confirmation email below."));
+
+    const showN = 3;
+    const primary = opts.suggestions.slice(0, showN);
+    const extra   = opts.suggestions.slice(showN);
 
     const list = el("div", { class: "stack", style: "margin-bottom:1rem;" });
-    renderSupplierList(list, opts.suggestions);
-    if (opts.extraSuggestions.length) {
+    renderSupplierList(list, primary);
+    if (extra.length) {
       const details = el("details", { style: "margin-top:.5rem;" });
-      details.appendChild(el("summary", { style: "cursor:pointer; color:var(--caramel); font-weight:600; font-size:.9rem;" },
-        `More options (${opts.extraSuggestions.length} brokers)`));
-      const extra = el("div", { class: "stack", style: "margin-top:.5rem;" });
-      renderSupplierList(extra, opts.extraSuggestions);
-      details.appendChild(extra);
+      details.appendChild(el("summary", { class: "more-summary" },
+        `Show more options (${extra.length} more)`));
+      const wrap2 = el("div", { class: "stack", style: "margin-top:.5rem;" });
+      renderSupplierList(wrap2, extra);
+      details.appendChild(wrap2);
       list.appendChild(details);
+    }
+    if (opts.compare.length) {
+      const compareRow = el("div", { class: "row-wrap", style: "margin-top:.75rem; font-size:.85rem;" });
+      compareRow.appendChild(el("span", { class: "muted" }, "Compare prices:"));
+      opts.compare.forEach(c =>
+        compareRow.appendChild(el("a", {
+          href: c.url, target: "_blank", rel: "noopener",
+          style: "color:var(--caramel); font-weight:600;"
+        }, c.name + " ↗")));
+      list.appendChild(compareRow);
     }
     wrap.appendChild(list);
 
@@ -143,26 +204,31 @@ function anchorCard(title, anchor, opts) {
 
     const form = el("div", { class: "grid-2", style: "margin-top:.75rem;" });
     opts.fields.forEach(f => {
-      const isIntl = f === "international";
-      const input = el("input", {
-        type: f.toLowerCase().includes("date") ? (f.toLowerCase().includes("time") ? "datetime-local" :
-               (f === "depart" || f === "arrive") ? "datetime-local" : "date") :
-               (isIntl ? "checkbox" : "text"),
-        placeholder: f,
-        value: anchor.data?.[f] ?? "",
-        checked: isIntl ? !!anchor.data?.[f] : undefined,
-        style: "width:100%"
-      });
-      input.addEventListener("change", () => {
-        const data = { ...(anchor.data || {}) };
-        data[f] = isIntl ? input.checked : input.value;
-        opts.onSave(data);
-      });
-      const label = el("label", {}, [
-        el("span", {}, f),
-        input
-      ]);
-      form.appendChild(label);
+      if (f.type === "checkbox") {
+        const cb = el("input", { type: "checkbox", checked: !!anchor.data?.[f.key] });
+        cb.addEventListener("change", () => {
+          const data = { ...(anchor.data || {}) };
+          data[f.key] = cb.checked;
+          opts.onSave(data);
+        });
+        const row = el("label", { class: "checkbox-row", style: "grid-column: 1 / -1;" });
+        row.appendChild(cb);
+        row.appendChild(el("span", { style: "margin:0 0 0 .5rem; font-weight:500; color:var(--brown-tx);" }, f.label));
+        form.appendChild(row);
+      } else {
+        const input = el("input", {
+          type: f.type,
+          placeholder: f.label,
+          value: anchor.data?.[f.key] ?? "",
+          style: "width:100%"
+        });
+        input.addEventListener("change", () => {
+          const data = { ...(anchor.data || {}) };
+          data[f.key] = input.value;
+          opts.onSave(data);
+        });
+        form.appendChild(el("label", {}, el("span", {}, f.label), input));
+      }
     });
     wrap.appendChild(form);
   } else {
@@ -179,19 +245,28 @@ function renderSupplierList(host, suggestions) {
     return;
   }
   suggestions.forEach(sup => {
-    const row = el("div", {
-      class: "row",
-      style: "justify-content: space-between; padding:.5rem .75rem; background: var(--cream); border-radius:10px;"
-    });
-    row.appendChild(el("span", {}, `${sup.name}${sup.tier ? " — " + sup.tier : ""}`));
-    if (sup.url) {
-      row.appendChild(el("a", {
-        href: sup.url, target: "_blank", rel: "noopener",
-        class: "btn btn-accent btn-sm"
-      }, "Book on supplier ↗"));
-    } else {
-      row.appendChild(el("span", { class: "muted", style: "font-size:.85rem;" }, "no link"));
-    }
+    const row = el("div", { class: "supplier-row" });
+    const left = el("div", {}, [
+      el("div", { style: "font-weight:600;" }, sup.name),
+      el("div", { class: "muted", style: "font-size:.8rem;" },
+        [sup.tier, sup.note].filter(Boolean).join(" • "))
+    ]);
+    const priceLabel = sup.priceFrom
+      ? el("div", { class: "muted", style: "font-size:.85rem; text-align:right;" }, [
+          el("div", { class: "muted", style: "font-size:.7rem;" }, "from"),
+          el("strong", { style: "color:var(--brown-dk); font-size:1rem;" }, formatVND(sup.priceFrom))
+        ])
+      : null;
+    const action = sup.url
+      ? el("a", {
+          href: sup.url, target: "_blank", rel: "noopener",
+          class: "btn btn-accent btn-sm"
+        }, "Book ↗")
+      : el("span", { class: "muted", style: "font-size:.85rem;" }, "no link");
+
+    row.appendChild(left);
+    if (priceLabel) row.appendChild(priceLabel);
+    row.appendChild(action);
     host.appendChild(row);
   });
 }
@@ -538,14 +613,15 @@ function renderFeeList() {
       el("td", {}, f.splitMode),
       el("td", {}, el("button", {
         class: "btn-ghost",
+        title: f.voided ? "Restore this fee (keeps audit log)" : "Cancel this fee (keeps audit log, excludes from totals)",
         onclick: () => {
           f.voided = !f.voided;
           f.log.push({ at: new Date().toISOString(),
             who: getProfile().name || "anon",
-            action: "void", snapshot: null });
+            action: f.voided ? "cancel" : "restore", snapshot: null });
           renderFees();
         }
-      }, f.voided ? "unvoid" : "void"))
+      }, f.voided ? "↺ Restore" : "× Cancel"))
     ]));
   });
   tbl.appendChild(tb);

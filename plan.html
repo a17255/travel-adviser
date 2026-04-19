@@ -13,19 +13,24 @@
 </head>
 <body>
   <header class="nav-top">
-    <div style="max-width: 56rem; margin: 0 auto; padding: .75rem 1.5rem;" class="row">
+    <div class="nav-inner row">
       <a href="index.html" class="btn-ghost" style="font-weight:600;">← Home</a>
-      <h1 id="trip-title" style="font-size:1.15rem; margin: 0; flex: 1; font-family: inherit; color: var(--brown-dk);">Trip</h1>
-      <button id="save-trip" class="btn btn-primary btn-sm">Save</button>
+      <h1 id="trip-title" style="font-size:1.15rem; margin:0; flex:1; font-family:inherit; color:var(--brown-dk);">Trip</h1>
+      <div class="row-wrap">
+        <button id="export-trip" class="btn btn-outline btn-sm" title="Download as JSON file">Export</button>
+        <button id="import-trip" class="btn btn-outline btn-sm" title="Load a trip from JSON file">Import</button>
+        <button id="share-trip" class="btn btn-outline btn-sm" title="Copy a shareable link">Share link</button>
+        <button id="save-trip" class="btn btn-primary btn-sm">Save trip</button>
+      </div>
     </div>
-    <div id="overview" style="max-width: 56rem; margin: 0 auto; padding: 0 1.5rem .5rem;" class="muted"></div>
-    <nav style="max-width: 56rem; margin: 0 auto; padding: 0 1.5rem;" class="tab-bar">
+    <div id="overview" class="nav-inner muted" style="padding-top:0; padding-bottom:.5rem;"></div>
+    <nav class="nav-inner tab-bar" style="padding-top:0; padding-bottom:0;">
       <button data-tab="plan" class="tab-btn active">Planning</button>
       <button data-tab="fees" class="tab-btn">Trip Fee</button>
     </nav>
   </header>
 
-  <main>
+  <main class="wide">
     <section id="tab-plan"></section>
     <section id="tab-fees" hidden></section>
   </main>

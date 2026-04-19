@@ -3,8 +3,8 @@ import { generatePlan } from "./planner.js";
 import { el, uuid } from "./ui.js";
 
 export function reseedAuto(trip) {
-  const userRows = trip.itinerary.filter(r => r.source === "user");
-  trip.itinerary = [...autoRows(trip), ...userRows].sort(cmp);
+  const keep = trip.itinerary.filter(r => r.source !== "auto");
+  trip.itinerary = [...autoRows(trip), ...keep].sort(cmp);
 }
 
 export function smartGenerate(trip) {

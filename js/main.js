@@ -1,6 +1,19 @@
 import { saveCurrentTrip, listTrips, deleteTrip } from "./store.js";
 import { findTemplates } from "./templates.js";
-import { el, qs, uuid } from "./ui.js";
+import { el, qs, uuid, decodeTrip } from "./ui.js";
+
+// If URL hash contains a shared trip, load it directly.
+const hashMatch = location.hash.match(/^#trip=(.+)$/);
+if (hashMatch) {
+  const shared = decodeTrip(hashMatch[1]);
+  if (shared && shared.destination) {
+    saveCurrentTrip(shared);
+    history.replaceState(null, "", location.pathname);
+    location.href = "plan.html";
+  } else {
+    alert("That share link looks corrupt — couldn't load the trip.");
+  }
+}
 
 function formDataToTrip(fd) {
   return {

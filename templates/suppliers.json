@@ -1,26 +1,49 @@
 {
+  "_note": "Prices are rough estimates in VND per person (airlines) or per room per night (hotels). Real prices vary — click the supplier link to see live rates.",
   "airlines": {
     "domestic": [
-      { "name": "Vietnam Airlines", "code": "VN", "url": "https://www.vietnamairlines.com" },
-      { "name": "VietJet Air",      "code": "VJ", "url": "https://www.vietjetair.com" },
-      { "name": "Bamboo Airways",   "code": "QH", "url": "https://www.bambooairways.com" }
+      { "name": "VietJet Air",      "code": "VJ", "url": "https://www.vietjetair.com",         "priceFrom": 700000,  "note": "Lowest fares, baggage extra" },
+      { "name": "Bamboo Airways",   "code": "QH", "url": "https://www.bambooairways.com",      "priceFrom": 1100000, "note": "Mid-tier, includes 20kg" },
+      { "name": "Vietnam Airlines", "code": "VN", "url": "https://www.vietnamairlines.com",    "priceFrom": 1500000, "note": "Full service, SkyTeam" }
     ],
     "international": [
-      { "name": "Vietnam Airlines", "code": "VN" },
-      { "name": "Singapore Airlines", "code": "SQ" },
-      { "name": "Cathay Pacific",   "code": "CX" }
+      { "name": "AirAsia",          "code": "AK", "url": "https://www.airasia.com",             "priceFrom": 1800000, "note": "Budget regional" },
+      { "name": "Scoot",            "code": "TR", "url": "https://www.flyscoot.com",            "priceFrom": 2400000, "note": "Budget, Singapore hub" },
+      { "name": "Vietnam Airlines", "code": "VN", "url": "https://www.vietnamairlines.com",     "priceFrom": 4500000, "note": "Full service" },
+      { "name": "Singapore Airlines","code":"SQ", "url": "https://www.singaporeair.com",        "priceFrom": 6500000, "note": "Premium" },
+      { "name": "Cathay Pacific",   "code": "CX", "url": "https://www.cathaypacific.com",       "priceFrom": 6800000, "note": "Premium, HK hub" }
+    ],
+    "compare": [
+      { "name": "Google Flights",   "url": "https://www.google.com/travel/flights" },
+      { "name": "Skyscanner",       "url": "https://www.skyscanner.com" },
+      { "name": "Traveloka",        "url": "https://www.traveloka.com/en-vn/flight" }
     ]
   },
   "hotels": {
     "Phan Thiet": [
-      { "name": "Anantara Mui Ne Resort",    "tier": "luxury", "url": "https://www.booking.com/searchresults.html?ss=Anantara+Mui+Ne+Resort" },
-      { "name": "The Cliff Resort",          "tier": "mid",    "url": "https://www.booking.com/searchresults.html?ss=The+Cliff+Resort+Mui+Ne" },
-      { "name": "Mui Ne Backpackers Village","tier": "budget", "url": "https://www.booking.com/searchresults.html?ss=Mui+Ne+Backpackers+Village" }
+      { "name": "Mui Ne Backpackers Village", "tier": "budget", "priceFrom": 280000,  "url": "https://www.booking.com/searchresults.html?ss=Mui+Ne+Backpackers+Village" },
+      { "name": "Phu Hai Beach Resort",       "tier": "budget", "priceFrom": 550000,  "url": "https://www.booking.com/searchresults.html?ss=Phu+Hai+Beach+Resort" },
+      { "name": "Sunsea Resort Mui Ne",       "tier": "mid",    "priceFrom": 900000,  "url": "https://www.booking.com/searchresults.html?ss=Sunsea+Resort+Mui+Ne" },
+      { "name": "Pandanus Resort",            "tier": "mid",    "priceFrom": 1200000, "url": "https://www.booking.com/searchresults.html?ss=Pandanus+Resort+Mui+Ne" },
+      { "name": "The Cliff Resort",           "tier": "mid",    "priceFrom": 1800000, "url": "https://www.booking.com/searchresults.html?ss=The+Cliff+Resort+Mui+Ne" },
+      { "name": "Amarin Resort & Spa",        "tier": "mid",    "priceFrom": 2200000, "url": "https://www.booking.com/searchresults.html?ss=Amarin+Resort+Mui+Ne" },
+      { "name": "Anantara Mui Ne Resort",     "tier": "luxury", "priceFrom": 4500000, "url": "https://www.booking.com/searchresults.html?ss=Anantara+Mui+Ne" },
+      { "name": "The Anam Mui Ne",            "tier": "luxury", "priceFrom": 5500000, "url": "https://www.booking.com/searchresults.html?ss=The+Anam+Mui+Ne" }
     ],
-    "__fallback__": [
-      { "name": "Booking.com", "tier": "",       "url": "https://www.booking.com" },
-      { "name": "Agoda",       "tier": "",       "url": "https://www.agoda.com" },
-      { "name": "Traveloka",   "tier": "",       "url": "https://www.traveloka.com" }
+    "Da Nang": [
+      { "name": "HAIAN Riverfront",           "tier": "mid",    "priceFrom": 950000,  "url": "https://www.booking.com/searchresults.html?ss=HAIAN+Riverfront+Da+Nang" },
+      { "name": "Melia Vinpearl",             "tier": "mid",    "priceFrom": 1400000, "url": "https://www.booking.com/searchresults.html?ss=Melia+Vinpearl+Da+Nang" },
+      { "name": "InterContinental Sun Peninsula","tier":"luxury","priceFrom":8500000, "url": "https://www.booking.com/searchresults.html?ss=InterContinental+Danang" }
+    ],
+    "Nha Trang": [
+      { "name": "Apus Hotel",                 "tier": "budget", "priceFrom": 450000,  "url": "https://www.booking.com/searchresults.html?ss=Apus+Hotel+Nha+Trang" },
+      { "name": "Sheraton Nha Trang",         "tier": "mid",    "priceFrom": 2200000, "url": "https://www.booking.com/searchresults.html?ss=Sheraton+Nha+Trang" },
+      { "name": "Evason Ana Mandara",         "tier": "luxury", "priceFrom": 3800000, "url": "https://www.booking.com/searchresults.html?ss=Evason+Ana+Mandara" }
+    ],
+    "compare": [
+      { "name": "Booking.com", "url": "https://www.booking.com" },
+      { "name": "Agoda",       "url": "https://www.agoda.com" },
+      { "name": "Traveloka",   "url": "https://www.traveloka.com" }
     ]
   }
 }
