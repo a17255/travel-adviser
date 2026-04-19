@@ -2,29 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Travel Adviser</title>
+  <title>Travel Adviser — plan your next trip</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" type="image/svg+xml" href="assets/svg/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap">
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap">
   <link rel="stylesheet" href="css/custom.css">
-  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
-  <header class="hero text-white py-16 palm-bg">
-    <div class="max-w-3xl mx-auto px-6">
-      <h1 class="text-5xl font-bold mb-2">Travel Adviser</h1>
-      <p class="text-lg opacity-90">Plan, track, and split your next trip.</p>
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="kicker">Plan • Track • Split</div>
+      <h1>Travel <em>Adviser</em></h1>
+      <p>Build your next trip one anchor at a time — tickets, hotels, day-by-day itinerary, and fair bill splitting.</p>
     </div>
   </header>
 
-  <main class="max-w-3xl mx-auto px-6 -mt-10 relative z-10">
-    <form id="trip-form" class="bg-white rounded-2xl shadow-lg p-8 space-y-4">
-      <div class="grid grid-cols-2 gap-4">
-        <label class="col-span-2">
-          <span class="text-sm font-semibold">Destination</span>
-          <input name="destination" list="cities" required
-                 class="mt-1 block w-full rounded-lg border p-2">
+  <main>
+    <form id="trip-form" class="card card-lg">
+      <div class="grid-2">
+        <label style="grid-column: 1 / -1">
+          <span>Destination</span>
+          <input name="destination" list="cities" required style="width:100%">
           <datalist id="cities">
             <option value="Phan Thiet"><option value="Da Nang">
             <option value="Nha Trang"><option value="Phu Quoc">
@@ -34,8 +35,8 @@
         </label>
 
         <label>
-          <span class="text-sm font-semibold">Transport</span>
-          <select name="transport" class="mt-1 block w-full rounded-lg border p-2">
+          <span>Transport</span>
+          <select name="transport" style="width:100%">
             <option value="bus">Bus</option>
             <option value="air">Air</option>
             <option value="motorcycle">Motorcycle</option>
@@ -44,8 +45,8 @@
         </label>
 
         <label>
-          <span class="text-sm font-semibold">Trip type</span>
-          <select name="tripType" class="mt-1 block w-full rounded-lg border p-2">
+          <span>Trip type</span>
+          <select name="tripType" style="width:100%">
             <option value="beach">Beach</option>
             <option value="mountain">Mountain</option>
             <option value="city">City</option>
@@ -55,26 +56,23 @@
         </label>
 
         <label>
-          <span class="text-sm font-semibold">Days</span>
-          <input type="number" name="days" min="1" value="3" required
-                 class="mt-1 block w-full rounded-lg border p-2">
+          <span>Days</span>
+          <input type="number" name="days" min="1" value="3" required style="width:100%">
         </label>
 
         <label>
-          <span class="text-sm font-semibold">People</span>
-          <input type="number" name="people" min="1" value="2" required
-                 class="mt-1 block w-full rounded-lg border p-2">
+          <span>People</span>
+          <input type="number" name="people" min="1" value="2" required style="width:100%">
         </label>
 
         <label>
-          <span class="text-sm font-semibold">Start date</span>
-          <input type="date" name="startDate" required
-                 class="mt-1 block w-full rounded-lg border p-2">
+          <span>Start date</span>
+          <input type="date" name="startDate" required style="width:100%">
         </label>
 
         <label>
-          <span class="text-sm font-semibold">Budget (VND)</span>
-          <select name="budgetRange" class="mt-1 block w-full rounded-lg border p-2">
+          <span>Budget (VND)</span>
+          <select name="budgetRange" style="width:100%">
             <option value="<5M">Under 5M</option>
             <option value="5-15M">5–15M</option>
             <option value="15-40M">15–40M</option>
@@ -83,31 +81,28 @@
         </label>
       </div>
 
-      <div class="flex gap-3 pt-4">
-        <button type="submit" name="mode" value="new"
-                class="flex-1 bg-sky-500 hover:bg-sky-600 text-white py-3 rounded-xl font-semibold">
+      <div class="row" style="gap:.75rem; margin-top: 1.25rem;">
+        <button type="submit" name="mode" value="new" class="btn btn-primary" style="flex:1">
           Create new plan
         </button>
-        <button type="submit" name="mode" value="template"
-                class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold">
+        <button type="submit" name="mode" value="template" class="btn btn-accent" style="flex:1">
           Refer to a good plan
         </button>
       </div>
     </form>
 
-    <section class="mt-8">
-      <h2 class="text-xl font-bold mb-3">My saved trips</h2>
-      <div id="saved-trips" class="space-y-2"></div>
+    <section style="margin-top: 2rem;">
+      <div class="kicker">your library</div>
+      <h2 style="margin: .25rem 0 1rem;">My saved trips</h2>
+      <div id="saved-trips" class="stack"></div>
     </section>
   </main>
 
-  <dialog id="template-modal" class="rounded-2xl p-0 w-11/12 max-w-xl">
-    <div class="p-6">
-      <h2 class="text-xl font-bold mb-4">Choose a template</h2>
-      <div id="template-list" class="space-y-2"></div>
-      <button id="template-close" class="mt-4 px-4 py-2 bg-gray-200 rounded-lg">
-        Cancel
-      </button>
+  <dialog id="template-modal" style="border:none; border-radius:16px; padding:0; max-width:36rem; width:92%;">
+    <div class="card">
+      <h2 style="margin:0 0 1rem;">Choose a template</h2>
+      <div id="template-list" class="stack"></div>
+      <button id="template-close" class="btn btn-outline btn-sm" style="margin-top: 1rem;">Cancel</button>
     </div>
   </dialog>
 

@@ -35,31 +35,24 @@ function renderSavedTrips() {
   host.innerHTML = "";
   const trips = listTrips();
   if (trips.length === 0) {
-    host.appendChild(el("p", { class: "text-gray-500" }, "No saved trips yet."));
+    host.appendChild(el("p", { class: "muted" }, "No saved trips yet."));
     return;
   }
   trips.forEach(t => {
-    const card = el("div", {
-      class: "flex items-center justify-between bg-white rounded-xl shadow p-3"
-    }, [
-      el("div", {}, [
-        el("div", { class: "font-semibold" }, `${t.destination} — ${t.days}d`),
-        el("div", { class: "text-sm text-gray-500" },
+    const card = el("div", { class: "card row" }, [
+      el("div", { style: "flex:1" }, [
+        el("div", { style: "font-weight:600" }, `${t.destination} — ${t.days}d`),
+        el("div", { class: "muted", style: "font-size:.85rem" },
            `${t.transport} • ${t.people} people • ${t.startDate || ""}`)
       ]),
-      el("div", { class: "flex gap-2" }, [
-        el("button", {
-          class: "px-3 py-1 bg-sky-500 text-white rounded-lg",
-          onclick: () => {
-            saveCurrentTrip(t);
-            location.href = "plan.html";
-          }
-        }, "Open"),
-        el("button", {
-          class: "px-3 py-1 bg-rose-400 text-white rounded-lg",
-          onclick: () => { deleteTrip(t.id); renderSavedTrips(); }
-        }, "Delete")
-      ])
+      el("button", {
+        class: "btn btn-accent btn-sm",
+        onclick: () => { saveCurrentTrip(t); location.href = "plan.html"; }
+      }, "Open"),
+      el("button", {
+        class: "btn btn-outline btn-sm",
+        onclick: () => { deleteTrip(t.id); renderSavedTrips(); }
+      }, "Delete")
     ]);
     host.appendChild(card);
   });
@@ -72,12 +65,13 @@ async function openTemplateModal(trip) {
   const host = qs("#template-list");
   host.innerHTML = "";
   if (list.length === 0) {
-    host.appendChild(el("p", { class: "text-gray-500" },
+    host.appendChild(el("p", { class: "muted" },
       "No templates match. Try creating a new plan instead."));
   } else {
     list.forEach(t => {
       host.appendChild(el("button", {
-        class: "block w-full text-left bg-gray-100 hover:bg-gray-200 rounded-lg p-3",
+        class: "btn btn-outline",
+        style: "width:100%; justify-content:flex-start;",
         onclick: () => {
           const chosen = { ...t.trip, id: uuid(),
             startDate: trip.startDate, people: trip.people };
